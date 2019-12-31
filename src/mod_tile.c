@@ -753,8 +753,8 @@ static int delay_allowed(request_rec *r, enum tileState state) {
         }
     }
 
-    hashkey = (ip.s6_addr32[0] ^ ip.s6_addr32[1] ^ ip.s6_addr32[2] ^ ip.s6_addr32[3]) % DELAY_HASHTABLE_SIZE;
-    
+    hashkey = (*((uint32_t *)(&ip.s6_addr[0])) ^ *((uint32_t *)(&ip.s6_addr[4])) ^ *((uint32_t *)(&ip.s6_addr[8])) ^ *((uint32_t *)(&ip.s6_addr[12]))) % DELAY_HASHTABLE_SIZE;
+
     /* If a delaypool fillup is ongoing, just skip accounting to not block on a lock */
     if (delayp->locked) {
         ap_log_rerror(APLOG_MARK, APLOG_DEBUG, 0, r, "skipping delay pool accounting, during fillup procedure\n");
