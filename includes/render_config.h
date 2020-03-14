@@ -1,7 +1,7 @@
 #ifndef RENDER_CONFIG_H
 #define RENDER_CONFIG_H
 
-#define MAX_ZOOM 20
+#define MAX_ZOOM 24
 
 // MAX_SIZE is the biggest file which we will return to the user
 #define MAX_SIZE (1 * 1024 * 1024)
@@ -35,10 +35,10 @@
 #define XMLCONFIGS_MAX 10
 
 // Mapnik input plugins (will need to adjust for 32 bit libs)
-#define MAPNIK_PLUGINS "/usr/local/lib64/mapnik/input"
+#define MAPNIK_PLUGINS "/opt/osm/lib/mapnik/input"
 
 // Default directory to search for fonts. Recursion can be enabled if desired.
-#define FONT_DIR "/usr/local/lib64/mapnik/fonts"
+#define FONT_DIR "/opt/osm/lib/mapnik/fonts"
 #define FONT_RECURSE 0
 
 // Typical interval between planet imports, used as basis for tile expiry times

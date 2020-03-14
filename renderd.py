@@ -24,20 +24,20 @@
 # The queue handler might stay in C with a smaller python rendering daemon
 
 import sys, os
-import SocketServer
+import socketserver
 import struct
-import thread
+import _thread
 import threading
 import socket
-import ConfigParser
+import configparser
 import mapnik
 import time
 import errno
 from math import pi,cos,sin,log,exp,atan
-from StringIO import StringIO
+from io import StringIO
 
 import cairo
-import cStringIO
+import io
 
 MAX_ZOOM = 18
 METATILE = 8
@@ -94,7 +94,7 @@ class ProtocolPacketV1(ProtocolPacket):
         version, request, x, y, z = struct.unpack(self.fields, data)
 
         if version != 1:
-            print "Received V1 packet with incorect version %d" % version
+            print("Received V1 packet with incorect version %d" % version)
         else:
             #print "Got V1 request, command(%d), x(%d), y(%d), z(%d)" \
             #    % (request, x, y, z)
@@ -116,7 +116,7 @@ class ProtocolPacketV1(ProtocolPacket):
         data = struct.pack(self.fields, (1, status, x, y, z))
         try: 
             self.dest.send(data)
-        except socket.error, e:
+        except socket.error as e:
                if e[0] != errno.EBADF:
                    raise
 
@@ -130,7 +130,7 @@ class ProtocolPacketV2(ProtocolPacket):
         version, request, x, y, z, xmlname = struct.unpack(self.fields, data)
 
         if version != 2:
-            print "Received V2 packet with incorect version %d" % version
+            print("Received V2 packet with incorect version %d" % version)
         else:
             #print "Got V2 request, command(%d), xmlname(%s), x(%d), y(%d), z(%d)" \
             #    % (request, xmlname, x, y, z)
@@ -152,7 +152,7 @@ class ProtocolPacketV2(ProtocolPacket):
         data = struct.pack(self.fields, 2, status, x, y, z, xmlname)
         try:
             self.dest.send(data)
-        except socket.error, e:
+        except socket.error as e:
                if e[0] != errno.EBADF:
                    raise
 
@@ -267,13 +267,13 @@ class RenderThread:
         try:
             m = self.maps[xmlname]
         except KeyError:
-            print "No map for: '%s'" % xmlname
+            print("No map for: '%s'" % xmlname)
             return False
         tiles = self.render_meta(m, xmlname, x, y, z, size)
         self.meta_save(xmlname, x, y, z, size, tiles)
 
-        print "Done xmlname(%s) z(%d) x(%d-%d) y(%d-%d)" % \
-            (xmlname, z, x, x+size-1, y, y+size-1)
+        print("Done xmlname(%s) z(%d) x(%d-%d) y(%d-%d)" % \
+            (xmlname, z, x, x+size-1, y, y+size-1))
 
         return True;
 
@@ -310,7 +310,7 @@ class RenderThread:
                 if not os.path.exists(d):
                     raise
 
-        tmp = "%s.tmp.%d" % (meta_path, thread.get_ident())
+        tmp = "%s.tmp.%d" % (meta_path, _thread.get_ident())
         f = open(tmp, "w")
 
         f.write(struct.pack("4s4i", META_MAGIC, METATILE * METATILE, x, y, z))
@@ -362,7 +362,7 @@ def start_renderers(num_threads, tile_path, styles, queue_handler):
         render_thread = threading.Thread(target=renderer.loop)
         render_thread.setDaemon(True)
         render_thread.start()
-        print "Started render thread %s" % render_thread.getName()
+        print("Started render thread %s" % render_thread.getName())
 
 class RequestQueues:
     def __init__(self, request_limit = 32, dirty_limit = 1000):
@@ -424,7 +424,7 @@ class RequestQueues:
                 try:
                     item = self.dirties.popitem()
                 except KeyError:
-                    print "Odd, queues empty"
+                    print("Odd, queues empty")
                     return
 
             t = item[0]
@@ -441,12 +441,12 @@ class RequestQueues:
             return self.rendering.pop(t)
         except KeyError:
             # Should never happen. It implies the requests queues are broken
-            print "WARNING: Failed to locate request in rendering list!"
+            print("WARNING: Failed to locate request in rendering list!")
         finally:
             self.not_empty.release()
 
 
-class ThreadedUnixStreamHandler(SocketServer.BaseRequestHandler):
+class ThreadedUnixStreamHandler(socketserver.BaseRequestHandler):
 
     def rx_request(self, request):
         if (request.commandStatus != protocol.Render) \
@@ -481,7 +481,7 @@ class ThreadedUnixStreamHandler(SocketServer.BaseRequestHandler):
         while True:
             try:
                 data = self.request.recv(max_len)
-            except socket.error, e:
+            except socket.error as e:
                 if e[0] == errno.ECONNRESET:
                     #print "Connection reset by peer"
                     break
@@ -500,33 +500,33 @@ class ThreadedUnixStreamHandler(SocketServer.BaseRequestHandler):
                 #print "%s: Connection closed" % cur_thread.getName()
                 break
             else:
-                print "Invalid request length %d" % len(data)
+                print("Invalid request length %d" % len(data))
                 break
 
-class ThreadedUnixStreamServer(SocketServer.ThreadingMixIn, SocketServer.UnixStreamServer):
+class ThreadedUnixStreamServer(socketserver.ThreadingMixIn, socketserver.UnixStreamServer):
     def __init__(self, address, queue_handler, handler):
         if(os.path.exists(address)):
            os.unlink(address)
         self.address = address
         self.queue_handler = queue_handler
-        SocketServer.UnixStreamServer.__init__(self, address, handler)
+        socketserver.UnixStreamServer.__init__(self, address, handler)
         self.daemon_threads = True
 
 def listener(address, queue_handler):
     # Create the server
     server = ThreadedUnixStreamServer(address, queue_handler, ThreadedUnixStreamHandler)
     # The socket needs to be writeable by Apache
-    os.chmod(address, 0666)
+    os.chmod(address, 0o666)
     # Loop forever servicing requests
     server.serve_forever()
 
 def display_config(config):
     for xmlname in config.sections():
         if xmlname != "renderd" and xmlname != "mapnik":
-            print "Layer name: %s" % xmlname
+            print("Layer name: %s" % xmlname)
             uri = config.get(xmlname, "uri")
             xml = config.get(xmlname, "xml")
-            print "    URI(%s) = XML(%s)" % (uri, xml)
+            print("    URI(%s) = XML(%s)" % (uri, xml))
 
 def read_styles(config):
     styles = {}
@@ -543,7 +543,7 @@ if __name__ == "__main__":
 
     # Unifont has a better character coverage and is used as a fallback for DejaVu
     # if you use a style based on the osm-template-fonset.xml
-    mapnik.FontEngine.instance().register_font("/home/jburgess/osm/fonts/unifont-5.1.20080706.ttf")
+    mapnik.FontEngine.instance().register_font("/usr/share/fonts/Unifont/Unifont.ttf")
 
     default_cfg = StringIO("""
 [renderd]
@@ -552,7 +552,7 @@ num_threads=4
 tile_dir=/var/lib/mod_tile
 """)
 
-    config = ConfigParser.ConfigParser()
+    config = configparser.ConfigParser()
     config.readfp(default_cfg)
     config.read(cfg_file)
     display_config(config)

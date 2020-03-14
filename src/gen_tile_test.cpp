@@ -55,7 +55,7 @@
 #define box2d Envelope
 #define zoom_to_box zoomToBox
 #else
-#include <mapnik/box2d.hpp>
+#include <mapnik/geometry/box2d.hpp>
 #endif
 
 
