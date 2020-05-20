@@ -36,6 +36,8 @@
 // }
 #endif
 
+struct request_queue * render_request_queue;
+
 #ifndef MAIN_ALREADY_DEFINED
 static pthread_t *render_threads;
 static pthread_t *slave_threads;

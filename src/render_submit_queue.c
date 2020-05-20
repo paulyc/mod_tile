@@ -20,9 +20,8 @@ pthread_mutex_t qLock;
 pthread_mutex_t qStatsLock;
 static pthread_cond_t qCondNotEmpty;
 static pthread_cond_t qCondNotFull;
-
 static int maxLoad = 0;
-
+static int work_complete;
 static unsigned int qLen;
 struct qItem {
     char *mapname;
